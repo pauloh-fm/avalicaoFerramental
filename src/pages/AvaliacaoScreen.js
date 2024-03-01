@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { HOST, PROTOCOL, PORT } from '@env';
 import { 
 	SafeAreaView, 
 	View, 
@@ -21,7 +22,7 @@ const windowHeight = Dimensions.get('window').height;
 const isAndroid = Platform.OS === "android"
 
 const AvaliacaoScreen = ({route , navigation}) => {
-	console.log('route', route);
+	// console.log('route', route);
 
   const { params } = route;
   const avaliacaoData = params?.avaliacaoData;
@@ -43,7 +44,7 @@ const vendedorInfo = {
 
 	const handleEnviarAvaliacao = async () => {
 		try {
-			const response = await axios.post('http://192.168.140.126:8002/api/avaliacao/avaliar', {
+			const response = await axios.post(`${PROTOCOL}://${HOST}:${PORT}/api/avaliacao/avaliar`, {
 				avaliacao: valueAvaliation,
 				atendenteId: avaliacaoData?._id, 
 			});

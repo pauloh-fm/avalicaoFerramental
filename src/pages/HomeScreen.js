@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { HOST, PROTOCOL, PORT } from '@env';
 import { useNavigation } from '@react-navigation/native';
 import { 
   SafeAreaView, 
@@ -22,15 +23,15 @@ const windowHeight = Dimensions.get('window').height;
 const HomeScreen = () => {
 	const navigation = useNavigation();
   const [productsInPromotion, setProductsInPromotion] = useState([]);
-  const [avaliacaoData, setAvaliacaoData] = useState(null);
-
+   const [avaliacaoData, setAvaliacaoData] = useState(null);
+  const [error, setError] = useState(null); // Adicionado para armazenar erros
   useEffect(() => {
     const fetchData = async () => {
       try {
         const prods = await axios.get('http://ferramental.ddns.net:3008/products/promotions');
         setProductsInPromotion(prods.data);
       } catch (err) {
-        console.log(err);
+        setError(err.message); // Define o erro no estado
       }
     };
 
@@ -39,9 +40,9 @@ const HomeScreen = () => {
 
   const checkAvaliacao = async () => {
     try {
-      const response = await axios.get('http://192.168.140.126:8002/api/atendente/obter-atendente-avalicao');
+      const response = await axios.get(`${PROTOCOL}://${HOST}:${PORT}/api/atendente/obter-atendente-avalicao`);
       const data = response.data;
-
+      console.log(data);
       if (data) {
         console.log("Dados: ", data);
         setAvaliacaoData(data);
@@ -50,48 +51,46 @@ const HomeScreen = () => {
         console.log('Nenhum atendente para avaliação no momento.');
       }
     } catch (error) {
-      console.error('Erro na requisição:', error.message);
+      setError(error.message); // Define o erro no estado
     }
   };
-  // Event listener para mensagens WebSocket
-	useEffect(() => {
-		const socket = new WebSocket('ws://192.168.140.126:8002');
-		const handleWebSocketMessage = (event) => {
-			try {
-				const data = event.data;
-	//  console.log("Dados: ", data);
-				console.log('Mensagem recebida:', data);
-	
-				if (data) {
-					console.log('Acesso ao Check');
-					checkAvaliacao();
-				}
-			} catch (error) {
-				console.error('Erro ao analisar a mensagem', error.message);
-			}
-		};
-	
-		const handleWebSocketError = (error) => {
-			console.error('Erro de conexão com WebSocket:', error.message);
-			// Adicione lógica de tratamento de erro aqui, se necessário
-		};
-	
-		// Adicione um evento de escuta para erros
-		socket.addEventListener('error', handleWebSocketError);
-	
-		// Adicione um evento de escuta para mensagens
-		socket.addEventListener('message', handleWebSocketMessage);
-	
-		return () => {
-			// Remova os ouvintes de eventos ao limpar o componente
-			socket.removeEventListener('error', handleWebSocketError);
-			socket.removeEventListener('message', handleWebSocketMessage);
-	
-			// Feche a conexão WebSocket
-			socket.close();
-		};
-	}, []);
-	
+console.log(HOST, PORT, PROTOCOL)
+  useEffect(() => {
+    const socket = new WebSocket(`ws://${HOST}:8000`);//${PORT} // http://192.168.140.126/
+    const handleWebSocketMessage = (event) => {
+      try {
+        const data = event.data;
+        console.log('Mensagem recebida:', data);
+        console.log(event)
+        if (data.includes("Avaliação Disponível para o vendedor")) {
+          console.log('Acesso ao Check');
+          checkAvaliacao();
+        }
+      } catch (error) {
+        setError(error.message); // Define o erro no estado
+      }
+    };
+
+    const handleWebSocketError = (error) => {
+      console.error('Erro de conexão com WebSocket:', error.message);
+      setError(error.message); // Define o erro no estado
+    };
+
+    // Adicione um evento de escuta para erros
+    socket.addEventListener('error', handleWebSocketError);
+
+    // Adicione um evento de escuta para mensagens
+    socket.addEventListener('message', handleWebSocketMessage);
+
+    return () => {
+      // Remova os ouvintes de eventos ao limpar o componente
+      socket.removeEventListener('error', handleWebSocketError);
+      socket.removeEventListener('message', handleWebSocketMessage);
+
+      // Feche a conexão WebSocket
+      socket.close();
+    };
+  }, []);
 
 
   return (
